@@ -1,68 +1,10 @@
 import random
 import streamlit as st
 
-def get_range_for_difficulty(difficulty: str):
-    if difficulty == "Easy":
-        return 1, 20
-    if difficulty == "Normal":
-        return 1, 100
-    if difficulty == "Hard":
-        return 1, 50
-    return 1, 100
-
-
-def parse_guess(raw: str):
-    if raw is None:
-        return False, None, "Enter a guess."
-
-    if raw == "":
-        return False, None, "Enter a guess."
-
-    try:
-        if "." in raw:
-            value = int(float(raw))
-        else:
-            value = int(raw)
-    except Exception:
-        return False, None, "That is not a number."
-
-    return True, value, None
-
-
-def check_guess(guess, secret):
-    if guess == secret:
-        return "Win", "🎉 Correct!"
-
-    try:
-        if guess > secret:
-            return "Too High", "📈 Go HIGHER!"
-        else:
-            return "Too Low", "📉 Go LOWER!"
-    except TypeError:
-        g = str(guess)
-        if g == secret:
-            return "Win", "🎉 Correct!"
-        if g > secret:
-            return "Too High", "📈 Go HIGHER!"
-        return "Too Low", "📉 Go LOWER!"
-
-
-def update_score(current_score: int, outcome: str, attempt_number: int):
-    if outcome == "Win":
-        points = 100 - 10 * (attempt_number + 1)
-        if points < 10:
-            points = 10
-        return current_score + points
-
-    if outcome == "Too High":
-        if attempt_number % 2 == 0:
-            return current_score + 5
-        return current_score - 5
-
-    if outcome == "Too Low":
-        return current_score - 5
-
-    return current_score
+# AI collaboration: User requested refactoring to separate game logic from UI code.
+# We moved core functions (get_range_for_difficulty, parse_guess, check_guess, update_score)
+# from app.py to logic_utils.py for better code organization.
+from logic_utils import get_range_for_difficulty, parse_guess, check_guess, update_score
 
 st.set_page_config(page_title="Glitchy Guesser", page_icon="🎮")
 
@@ -80,7 +22,9 @@ difficulty = st.sidebar.selectbox(
 attempt_limit_map = {
     "Easy": 6,
     "Normal": 8,
-    "Hard": 5,
+    # AI collaboration: User requested more attempts for Hard difficulty since it has a much larger range (1-1000).
+    # We increased it from 5 to 15 attempts to give players a fair chance.
+    "Hard": 15,
 }
 attempt_limit = attempt_limit_map[difficulty]
 
@@ -89,24 +33,24 @@ low, high = get_range_for_difficulty(difficulty)
 st.sidebar.caption(f"Range: {low} to {high}")
 st.sidebar.caption(f"Attempts allowed: {attempt_limit}")
 
+# AI collaboration: User identified that changing difficulty levels didn't update the secret number range.
+# Together we added logic to detect difficulty changes and regenerate appropriate secrets with fresh game state.
+# Regenerate secret if difficulty changed
+if "current_difficulty" not in st.session_state or st.session_state.current_difficulty != difficulty:
+    st.session_state.secret = random.randint(low, high)
+    st.session_state.current_difficulty = difficulty
+    st.session_state.attempts = 1  # Reset attempts for new game
+    st.session_state.score = 0
+    st.session_state.status = "playing"
+    st.session_state.history = []
+
 if "secret" not in st.session_state:
     st.session_state.secret = random.randint(low, high)
-
-if "attempts" not in st.session_state:
-    st.session_state.attempts = 1
-
-if "score" not in st.session_state:
-    st.session_state.score = 0
-
-if "status" not in st.session_state:
-    st.session_state.status = "playing"
-
-if "history" not in st.session_state:
-    st.session_state.history = []
 
 st.subheader("Make a guess")
 
 st.info(
+    # FIXME: Logic breaks here
     f"Guess a number between 1 and 100. "
     f"Attempts left: {attempt_limit - st.session_state.attempts}"
 )
