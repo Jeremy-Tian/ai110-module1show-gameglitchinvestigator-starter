@@ -49,9 +49,10 @@ if "secret" not in st.session_state:
 
 st.subheader("Make a guess")
 
+# AI collaboration: User noticed the range message was hardcoded to "1 and 100"
+# regardless of difficulty. We fixed it to show the actual range (low to high).
 st.info(
-    # FIXME: Logic breaks here
-    f"Guess a number between 1 and 100. "
+    f"Guess a number between {low} and {high}. "
     f"Attempts left: {attempt_limit - st.session_state.attempts}"
 )
 
